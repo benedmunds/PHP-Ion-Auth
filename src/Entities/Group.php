@@ -8,121 +8,12 @@ class Group implements CollectionItem
 {
     private $id;
 
-
-    /**
-     * Function:  get_users_groups
-     * ------------------------------
-     * @param bool $id
-     * @return array
-     */
-
-
-    public function getUsersGroups($id = false)
-    {
-        $this->events->trigger('getUsersGroup');
-
-        //if no id was passed use the current users id
-        $id || $id = $_SESSION['user_id'];
-
-        return $this->db->select(
-            'select ' . $this->tables['users_groups'] . '.' . $this->join['groups'] . ' as id, ' . $this->tables['groups'] . '.name, ' . $this->tables['groups'] . '.description
-		     FROM ' . $this->tables['users_groups']
-            . " LEFT JOIN " . $this->tables['groups'] . " ON " . $this->tables['users_groups'] . '.' . $this->join['groups'] . ' = ' . $this->tables['groups'] . '.id'
-            . ' WHERE ' . $this->tables['users_groups'] . '.' . $this->join['users'] . " = " . $id
-        );
-    }
-
-    /**
-     * Function: add_to_group
-     * -----------------------------
-     * @param $groupId
-     * @param bool $userId
-     * @return bool
-     */
-    public function addToGroup($groupId, $userId = false)
-    {
-        $this->events->trigger('addToGroup');
-
-        //if no id was passed use the current users id
-        $userId || $userId = $this->session->userdata('userId');
-
-        //check if unique - num_rows() > 0 means row found
-        if (count(
-            $this->db->where(array($this->join['groups'] => (int)$groupId, $this->join['users'] => (int)$userId))->get(
-                $this->tables['usersGroups']
-            )
-        )
-        ) {
-            return false;
-        }
-
-        if ($return = $this->db->insert(
-            $this->tables['usersGroups'],
-            array($this->join['groups'] => (int)$groupId, $this->join['users'] => (int)$userId)
-        )
-        ) {
-            if (isset($this->_cacheGroups[$groupId])) {
-                $groupName = $this->_cacheGroups[$groupId];
-            } else {
-                $group = $this->group($groupId)->result();
-                $groupName = $group[0]->name;
-                $this->_cacheGroups[$groupId] = $groupName;
-            }
-            $this->_cacheUserInGroup[$userId][$groupId] = $groupName;
-        }
-        return $return;
-    }
-
-    /**
-     * remove_from_group
-     *
-     * @return bool
-     **/
-    public function remove_from_group($group_ids = false, $user_id = false)
-    {
-        $this->events->trigger('removeFromGroup');
-        // user id is required
-        if (empty($userId)) {
-            return false;
-        }
-
-        // if group id(s) are passed remove user from the group(s)
-        if (!empty($groupIds)) {
-            if (!is_array($groupIds)) {
-                $groupIds = array($groupIds);
-            }
-
-            foreach ($groupIds as $groupId) {
-                $this->db->delete(
-                    $this->tables['usersGroups'],
-                    array($this->join['groups'] => (int)$groupId, $this->join['users'] => (int)$user_id)
-                );
-                if (isset($this->_cacheUserInGroup[$userId]) && isset($this->_cacheUserInGroup[$userId][$groupId])) {
-                    unset($this->_cacheUserInGroup[$userId][$groupId]);
-                }
-            }
-
-            $return = true;
-        } // otherwise remove user from all groups
-        else {
-            if ($return = $this->db->delete(
-                $this->tables['usersGroups'],
-                array($this->join['users'] => (int)$userId)
-            )
-            ) {
-                $this->_cacheUserInGroup[$userId] = array();
-            }
-        }
-
-        return $return;
-    }
-
     /**
      * groups
      *
      * @return object
      **/
-    public function groups()
+    public function all()
     {
         $this->events->trigger('groups');
 
@@ -162,7 +53,7 @@ class Group implements CollectionItem
      *
      * @return object
      **/
-    public function group($id = null)
+    public function find($id = null)
     {
         $this->events->trigger('group');
 
@@ -185,10 +76,10 @@ class Group implements CollectionItem
      * @param $additionalData
      * @return bool
      */
-    public function createGroup($groupName = false, $groupDescription = '', $additionalData = array())
+    public function save()
     {
         // bail if the group name was not passed
-        if (!$groupName) {
+        if (!$this->groupName()) {
             $this->setError('groupNameRequired');
             return false;
         }
@@ -309,11 +200,6 @@ class Group implements CollectionItem
         return true;
     }
 
-    /**
-     * getId
-     *
-     * @return $this->id
-     */
     public function getId()
     {
         return $this->id;

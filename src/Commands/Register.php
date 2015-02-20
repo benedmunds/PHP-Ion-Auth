@@ -15,6 +15,7 @@ class Register
 
     public function register(\IonAuth\IonAuth\Config\Config $config, IonAuth\IonAuth\Event $events, User $user)
     {
+//        $this->ionAuthModel->triggerEvents('preAccountCreation');
 
         //TODO - implement triggers
         $this->events->trigger('preAccountCreation');
@@ -76,10 +77,10 @@ class Register
                 );
 
                 $this->email->clear();
-                $this->email->from($config->get('adminEmail'), $config->get('siteTitle'));
+                $this->email->from($this->config->get('adminEmail'), $this->config->get('siteTitle'));
                 $this->email->to($email);
                 $this->email->subject(
-                    $config->get('siteTitle') . ' - ' . $this->lang->line('emailActivationSubject')
+                    $this->config->get('siteTitle') . ' - ' . $this->lang->line('emailActivationSubject')
                 );
                 $this->email->message($message);
 

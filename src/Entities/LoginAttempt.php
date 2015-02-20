@@ -113,6 +113,30 @@ class LoginAttempt implements CollectionItem
     }
 
     /**
+     * is_max_login_attempts_exceeded
+     * Based on code from Tank Auth, by Ilya Konyukhov (https://github.com/ilkon/Tank-Auth)
+     *
+     * @param string $identity
+     * @return boolean
+     **/
+    public function isMaxLoginAttemptsExceeded()
+    {
+        if ($this->config->get('trackLoginAttempts'))
+        {
+            $maxAttempts = $this->config->get('maximumLoginAttempts');
+            if ($maxAttempts > 0)
+            {
+                $attempts = $this->getAttemptsNum();
+                return $attempts >= $maxAttempts;
+            }
+        }
+        return false;
+    }
+
+    /**
+     *
+     */
+    /**
      * getIpAddress
      *
      * get the ip address of the user.
